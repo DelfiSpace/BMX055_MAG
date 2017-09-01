@@ -16,7 +16,8 @@
 #define BMX055_MAG_H
 
 #include <Energia.h>
-#include <DSPI.h>
+// #include <DSPI.h>
+#include <DWire.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -43,8 +44,8 @@ protected:
 	bmm050_t bmm050;
 	
 public:
-	
-	BMX055_MAG(DSPI *spi, unsigned char pin);
+	BMX055_MAG(DWire *i2c, unsigned char addr);
+	// BMX055_MAG(DSPI *spi, unsigned char pin);
 	virtual ~BMX055_MAG( ) {};
 	
 	void init();

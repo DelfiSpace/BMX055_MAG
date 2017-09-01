@@ -14,7 +14,8 @@
  
 #include "BMX055_MAG.h"	
 
-DSPI *line;
+// DSPI *line;
+DWire *wire;
 	
 /**  BMX055 Magnetometer class creator function
  *
@@ -23,13 +24,16 @@ DSPI *line;
  *	 unsigned char pin	   Chip select GPIO pin
  *
  */
-BMX055_MAG::BMX055_MAG(DSPI *spi, unsigned char pin)
-{
-	line = spi;
+BMX055_MAG::BMX055_MAG(DWire *i2c, unsigned char addr)
+// BMX055_MAG::BMX055_MAG(DSPI *spi, unsigned char pin)
+{	
+	wire = i2c;
+	// line = spi;
 	bmm050.bus_write = writeRegister;
 	bmm050.bus_read = readRegister;
 	bmm050.delay_msec = delay_msek;
-	bmm050.dev_addr = pin;	//SPI: CS GPIO, I2C: device address
+	// bmm050.dev_addr = pin;	//SPI: CS GPIO, I2C: device address
+	bmm050.dev_addr = addr;	//SPI: CS GPIO, I2C: device address
 }
 
 /**  Initialise BMX055 Magnetometer
@@ -53,7 +57,10 @@ void BMX055_MAG::init()
  */
 signed char BMX055_MAG::ping()
 {	
-	return (line->transfer(BMM050_CHIP_ID) == 0x32);
+	unsigned char data;
+	// return (line->transfer(BMM050_CHIP_ID) == 0x32);
+	readRegister(bmm050.dev_addr, BMM050_CHIP_ID, &data, 1);
+	return (data == 0x32);
 }
 
 /**  Get magnetometer measurement
@@ -90,13 +97,29 @@ void BMX055_MAG::get_mag(s16 *data_array)
  */
 s8 readRegister(u8 dev_addr, u8 reg_addr, u8 *reg_data, u8 size)
 {
-	digitalWrite(dev_addr, LOW);
-	line->transfer(reg_addr);
+	// digitalWrite(dev_addr, LOW);
+	// line->transfer(reg_addr);
 	
-	for (unsigned int i = 0; i < size; i++)
-		*(reg_data + i) = line->transfer(0x00);
+	// for (unsigned int i = 0; i < size; i++)
+		// *(reg_data + i) = line->transfer(0x00);
 	
-	digitalWrite(dev_addr, HIGH);	
+	// digitalWrite(dev_addr, HIGH);	
+	
+	*reg_data = -1;
+    wire->beginTransmission(dev_addr);
+    wire->write(reg_addr);
+	
+    unsigned char res = wire->requestFrom(dev_addr, size);
+    if (res == size)
+    {	
+		for (unsigned int i = size - 1; i >= 0; i--)
+		((unsigned char*)reg_data)[i] = wire->read();
+		return 0;
+    }
+	else
+	{
+		return 1;
+	}
 }
 
 /**  Write sensor register
@@ -113,13 +136,18 @@ s8 readRegister(u8 dev_addr, u8 reg_addr, u8 *reg_data, u8 size)
  */
 s8 writeRegister(u8 dev_addr, u8 reg_addr, u8 *reg_data, u8 size)
 {
-	digitalWrite(dev_addr, LOW);	
-	line->transfer(reg_addr);
+	// digitalWrite(dev_addr, LOW);	
+	// line->transfer(reg_addr);
 	
-	for (unsigned int i = 0; i < size; i++)		
-		line->transfer(*(reg_data + i));
+	// for (unsigned int i = 0; i < size; i++)		
+		// line->transfer(*(reg_data + i));
 	
-	digitalWrite(dev_addr, HIGH);	
+	// digitalWrite(dev_addr, HIGH);	
+	
+	wire->beginTransmission(dev_addr);
+    wire->write(reg_addr);
+    wire->write(*reg_data & 0xFF);      
+    return wire->endTransmission();
 }
 
 /**  Delay milli-second

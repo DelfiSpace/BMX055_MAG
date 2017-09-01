@@ -9,8 +9,10 @@
 
 #include "BMX055_MAG.h"
 
-DSPI master;        // used EUSCI_B0
-BMX055_MAG imu_mag(&master, 2);
+//DSPI master;        // used EUSCI_B0
+DWire wire1;
+//BMX055_MAG imu_mag(&master, 2);
+BMX055_MAG imu_mag(&wire1, 0x10);
 
 s16 mag_data[3];
 
@@ -21,9 +23,9 @@ void setup()
   delay(300);
 
   // initialise SPI:
-  master.begin();
+//  master.begin();
   delay(300);
-
+  wire1.begin();
   Serial.print("**** Start BMX055 Magnetometer test ****");
   Serial.println();
 
